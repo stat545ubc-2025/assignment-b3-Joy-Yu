@@ -199,6 +199,7 @@ server <- function(input, output, session) {
       )
   })
 
+  # neighbourhood list text
   output$neighbourhood_list <- renderText({
     data <- filtered_trees()
 
@@ -222,7 +223,7 @@ server <- function(input, output, session) {
     paste(neighbourhoods, collapse = "\n")
   })
 
-
+  # street list text
   output$street_list <- renderText({
     data <- filtered_trees()
 
@@ -275,16 +276,10 @@ server <- function(input, output, session) {
   # count
   output$result_count <- renderText({
     n <- nrow(filtered_trees())
-    paste("We found", n, "trees that match your filter.")
+    paste(n, "trees that match your filter are found.")
   })
 
-  # count
-  output$result_count <- renderText({
-    n <- nrow(filtered_trees())
-    paste("We found", n, "trees that match your filter.")
-  })
-
-  # download
+  # download the filtered data
   output$download_data <- downloadHandler(
     filename = function() {
       "vancouver_trees_filtered.csv"
