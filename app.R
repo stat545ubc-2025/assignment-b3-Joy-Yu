@@ -36,27 +36,36 @@ ui <- fluidPage(
       ),
 
       # select neighbourhood
-      selectInput(
+      selectizeInput(
         inputId = "neighbourhood",
         label   = "Neighbourhood:",
-        choices = c("All", sort(unique(vancouver_trees$neighbourhood_name))),
-        selected = "All"
+        choices = sort(unique(vancouver_trees$neighbourhood_name)),
+        multiple = TRUE,
+        options = list(
+          placeholder = "Select one or more neighbourhoods"
+        )
       ),
 
       # select street name
-      selectInput(
+      selectizeInput(
         inputId = "on_street",
         label   = "Street Name:",
-        choices = c("All", sort(streets_over_100)),
-        selected = "All"
+        choices = sort(streets_over_100),
+        multiple = TRUE,
+        options = list(
+          placeholder = "Select one or more streets"
+        )
       ),
 
       # select genus
-      selectInput(
+      selectizeInput(
         inputId = "genus",
         label   = "Genus:",
-        choices = c("All", sort(unique(vancouver_trees$genus_name))),
-        selected = "All"
+        choices = sort(unique(vancouver_trees$genus_name)),
+        multiple = TRUE,
+        options = list(
+          placeholder = "Select one or more genus"
+        )
       ),
 
       # select longitude range
@@ -131,23 +140,21 @@ server <- function(input, output, session) {
     data <- vancouver_trees
 
     # filtered by neighbourhood
-    if (input$neighbourhood != "All") {
+    if (!is.null(input$neighbourhood) && length(input$neighbourhood) > 0) {
       data <- data %>%
-        filter(neighbourhood_name == input$neighbourhood)
-
-
+        filter(neighbourhood_name %in% input$neighbourhood)
     }
 
     # filtered by on_street
-    if (input$on_street != "All") {
+    if (!is.null(input$on_street) && length(input$on_street) > 0) {
       data <- data %>%
-        filter(on_street == input$on_street)
+        filter(on_street %in% input$on_street)
     }
 
     # filtered by genus
-    if (input$genus != "All") {
+    if (!is.null(input$genus) && length(input$genus) > 0) {
       data <- data %>%
-        filter(genus_name == input$genus)
+        filter(genus %in% input$genus)
     }
 
     # filtered by longitude
