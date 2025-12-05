@@ -31,8 +31,8 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       helpText(
-        "Explore street trees in Vancouver using the vancouver_trees dataset.",
-        "Use the controls below to filter trees by neighbourhood, genus, and diameter."
+        "Explore trees in Vancouver using the vancouver_trees dataset.",
+        "Use the controls below to filter trees by location and genus, and find the place that you would like to live in!"
       ),
 
       # select neighbourhood
@@ -85,24 +85,41 @@ ui <- fluidPage(
     ),
 
     mainPanel(
-      # rab panel
+      br(),
+      textOutput("result_count"),
+      br(),
       tabsetPanel(
         tabPanel(
-          title = "Plot",
+          title = "Tree Genus Location Map",
           br(),
-          p("Tree Genus Distribution"),
-          plotOutput("location_plot")
+          plotOutput("location_plot"),
+          fluidRow(
+            column(
+              width = 6,
+              h4("Neighbourhoods"),
+              verbatimTextOutput("neighbourhood_list")
+            ),
+            column(
+              width = 6,
+              h4("Streets"),
+              verbatimTextOutput("street_list")
+            )
+          ),
         ),
         tabPanel(
-          title = "Table",
+          title = "Overview Table by Neighbourhood",
           br(),
-          textOutput("result_count"),
+          DT::dataTableOutput("neighbourhood_overview_table"),
+        ),
+        tabPanel(
+          title = "Overview Table by Street",
           br(),
-          DT::dataTableOutput("tree_table"),
-          br(),
-          downloadButton("download_data", "Download filtered data (CSV)")
-        )
-      )
+          DT::dataTableOutput("street_overview_table"),
+        ),
+      ),
+      br(),
+      downloadButton("download_data", "Download filtered data (CSV)"),
+      br(),
     )
   )
 )
@@ -117,6 +134,8 @@ server <- function(input, output, session) {
     if (input$neighbourhood != "All") {
       data <- data %>%
         filter(neighbourhood_name == input$neighbourhood)
+
+
     }
 
     # filtered by on_street
@@ -136,6 +155,13 @@ server <- function(input, output, session) {
       filter(
         longitude >= input$longitude_range[1],
         longitude <= input$longitude_range[2]
+      )
+
+    # filtered by latitude
+    data <- data %>%
+      filter(
+        latitude >= input$latitude_range[1],
+        latitude <= input$latitude_range[2]
       )
 
     data
@@ -158,31 +184,97 @@ server <- function(input, output, session) {
       labs(x = "Longitude",
            y = "Latitude",
            color = "Genus") +
-      theme_minimal()
+      theme_minimal() +
+      # adjust the map if longitude_range and latitude_range are changed
+      coord_sf(
+        xlim = input$longitude_range,
+        ylim = input$latitude_range
+      )
   })
 
-  # dynamic table
-  output$tree_table <- DT::renderDataTable({
+  output$neighbourhood_list <- renderText({
+    data <- filtered_trees()
+
+    if (nrow(data) == 0) {
+      return("No neighbourhoods available.")
+    }
+
+    neighbourhoods <- sort(unique(data$neighbourhood_name))
+
+    if (length(neighbourhoods) > 10) {
+      extra <- length(neighbourhoods) - 10
+      return(
+        paste(
+          paste(neighbourhoods[1:10], collapse = "\n"),
+          paste0("... and ", extra, " more"),
+          sep = "\n"
+        )
+      )
+    }
+
+    paste(neighbourhoods, collapse = "\n")
+  })
+
+
+  output$street_list <- renderText({
+    data <- filtered_trees()
+
+    if (nrow(data) == 0) {
+      return("No streets available.")
+    }
+
+    streets <- sort(unique(data$on_street))
+
+    if (length(streets) > 10) {
+      extra <- length(streets) - 10
+      return(
+        paste(
+          paste(streets[1:10], collapse = "\n"),
+          paste0("... and ", extra, " more"),
+          sep = "\n"
+        )
+      )
+    }
+
+    paste(streets, collapse = "\n")
+  })
+
+  # overview table by neighbourhood
+  output$neighbourhood_overview_table <- DT::renderDataTable({
     data <- filtered_trees()
 
     data %>%
-      select(
-        tree_id,
-        common_name,
-        genus_name,
-        species_name,
-        diameter,
-        height_range_id,
-        neighbourhood_name,
-        std_street,
-        on_street
-      )
+      group_by(neighbourhood_name) %>%
+      summarise(
+        tree_count = n(),
+        n_genus = n_distinct(genus_name)
+      ) %>%
+      arrange(desc(tree_count))
+  })
+
+  # overview table by street
+  output$street_overview_table <- DT::renderDataTable({
+    data <- filtered_trees()
+
+    data %>%
+      group_by(on_street) %>%
+      summarise(
+        tree_count = n(),
+        n_genus = n_distinct(genus_name)
+      ) %>%
+      arrange(desc(tree_count))
   })
 
   # count
   output$result_count <- renderText({
     n <- nrow(filtered_trees())
-    paste("We found", n, "trees that match your filters.")
+    paste("We found", n, "trees that match your filter.")
+  })
+
+  # count
+  output$result_count <- renderText({
+    n <- nrow(filtered_trees())
+    paste("We found", n, "trees that match your filter.")
   })
 
   # download
