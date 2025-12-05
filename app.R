@@ -253,10 +253,10 @@ server <- function(input, output, session) {
     data %>%
       group_by(neighbourhood_name) %>%
       summarise(
-        tree_count = n(),
-        n_genus = n_distinct(genus_name)
+        number_of_trees = n(),
+        number_of_genera = n_distinct(genus_name)
       ) %>%
-      arrange(desc(tree_count))
+      arrange(desc(number_of_trees))
   })
 
   # overview table by street
@@ -266,10 +266,10 @@ server <- function(input, output, session) {
     data %>%
       group_by(on_street) %>%
       summarise(
-        tree_count = n(),
-        n_genus = n_distinct(genus_name)
+        number_of_trees = n(),
+        number_of_genera = n_distinct(genus_name)
       ) %>%
-      arrange(desc(tree_count))
+      arrange(desc(number_of_trees))
   })
 
   # count
